@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://profile.miyaru.online/</loc>
+    <lastmod>2026-07-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://profile.miyaru.online/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://profile.miyaru.online/" />
+    <image:image>
+      <image:loc>https://s240-ava-talk.zadn.vn/5/1/5/9/3/240/8008f8072cdfc9f872a0c905e2e70595.jpg</image:loc>
+      <image:title>Miyaru Yue — Digital Marketing Consultant Việt Nam</image:title>
+      <image:caption>Ảnh đại diện Miyaru Yue</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://cover-talk.zadn.vn/5/7/6/7/2/8008f8072cdfc9f872a0c905e2e70595.jpg</image:loc>
+      <image:title>Banner Miyaru Yue</image:title>
+    </image:image>
+  </url>
+</urlset>
