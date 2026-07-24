@@ -733,49 +733,6 @@
     .tl-item:nth-child(4) { transition-delay: .26s }
     .tl-item:nth-child(5) { transition-delay: .33s }
 
-    /* ══ FOOTER ══ */
-    .site-footer {
-      position: relative; z-index: 1;
-      margin-top: 8px;
-      border-top: 1px solid var(--bd);
-      background: linear-gradient(180deg, transparent 0%, rgba(255,122,0,.03) 100%);
-    }
-    .ft-inner {
-      max-width: 1180px; margin: 0 auto;
-      padding: 22px 20px 18px;
-    }
-    .ft-top {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap;
-    }
-    .ft-brand {
-      display: flex; flex-direction: column; gap: 3px; min-width: 0;
-    }
-    .ft-logo {
-      font-family: var(--fm); font-size: .95rem; font-weight: 700;
-      letter-spacing: .16em; text-transform: uppercase; color: var(--t1);
-      text-decoration: none;
-    }
-    .ft-logo span { color: var(--pr) }
-    .ft-tag {
-      font-size: .72rem; color: var(--t3); line-height: 1.4;
-    }
-    .ft-meta {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
-    }
-    .ft-meta a,
-    .ft-loc {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: .74rem; color: var(--t2); text-decoration: none;
-      transition: color var(--ease);
-    }
-    .ft-meta a:hover { color: var(--pr) }
-    .ft-meta a i,
-    .ft-loc i { color: var(--pr); font-size: 11px; width: 12px; text-align: center }
-    .ft-sep {
-      width: 3px; height: 3px; border-radius: 50%; background: var(--t3);
-      opacity: .5; flex-shrink: 0;
-    }
     /* ══ RESPONSIVE ══ */
     @media(max-width:960px) {
       .c-grid {
@@ -975,9 +932,6 @@
       }
       .soc-plat { font-size: .84rem }
       .soc-hnd { font-size: .72rem }
-      .ft-inner { padding: 18px 12px 16px }
-      .ft-top { flex-direction: column; align-items: flex-start; gap: 12px }
-      .ft-sep { display: none }
     }
     @media(max-width:420px) {
       .banner { height: 130px }
@@ -1475,33 +1429,6 @@
 
 
   </main>
-
-  <footer class="site-footer" role="contentinfo">
-    <div class="ft-inner">
-      <div class="ft-top">
-        <div class="ft-brand">
-          <a class="ft-logo" href="https://profile.miyaru.online/" aria-label="Miyaru Yue — trang chủ">MI<span>YA</span>RU</a>
-          <p class="ft-tag">Miyaru Yue · miyaru.online · Digital Marketing &amp; Thiết kế Website</p>
-        </div>
-        <div class="ft-meta">
-          <a href="mailto:miyaru2k5@gmail.com" aria-label="Email">
-            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-            miyaru2k5@gmail.com
-          </a>
-          <span class="ft-sep" aria-hidden="true"></span>
-          <a href="https://zalo.me/0383277782" target="_blank" rel="noopener noreferrer" aria-label="Zalo">
-            <i class="fa-solid fa-comment-dots" aria-hidden="true"></i>
-            0383277782
-          </a>
-          <span class="ft-sep" aria-hidden="true"></span>
-          <span class="ft-loc">
-            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-            Việt Nam
-          </span>
-        </div>
-      </div>
-    </div>
-  </footer>
 
   <script>
     (function () {

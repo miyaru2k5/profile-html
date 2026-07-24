@@ -1,0 +1,682 @@
+// Miyaru Profile Platform — multi-tenant SaaS schema
+// Platform -> Tenant -> Members -> Profiles -> Domains -> Themes -> Templates -> Assets
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  TENANT_OWNER
+  TENANT_ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum MemberStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum ProfileStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  SUSPENDED
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFYING
+  ACTIVE
+  FAILED
+  DISABLED
+}
+
+enum DomainType {
+  SUBDOMAIN
+  CUSTOM
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum PlanInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+}
+
+enum BlockType {
+  HERO
+  TEXT
+  LINKS
+  SOCIAL
+  STATS
+  TAGS
+  TIMELINE
+  MEDIA
+  CTA
+  EMBED
+  CUSTOM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  WEBHOOK
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum PluginStatus {
+  INSTALLED
+  ENABLED
+  DISABLED
+  ERROR
+}
+
+enum MarketplaceItemType {
+  TEMPLATE
+  THEME
+  PLUGIN
+  BLOCK
+}
+
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  WON
+  LOST
+}
+
+enum AiMessageRole {
+  SYSTEM
+  USER
+  ASSISTANT
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  avatarUrl     String?
+  supabaseId    String?        @unique
+  locale        String         @default("vi")
+  isSuperAdmin  Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  memberships   TenantMember[]
+  ownedTenants  Tenant[]       @relation("TenantOwner")
+  profiles      Profile[]      @relation("ProfileOwner")
+  activityLogs  ActivityLog[]
+  auditLogs     AuditLog[]     @relation("AuditActor")
+  notifications Notification[]
+  mediaAssets   MediaAsset[]
+  crmLeads      CrmLead[]      @relation("LeadOwner")
+  aiSessions    AiSession[]
+  sessions      Session[]
+
+  @@index([email])
+  @@index([supabaseId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Tenant {
+  id             String           @id @default(cuid())
+  name           String
+  slug           String           @unique
+  ownerId        String
+  logoUrl        String?
+  planId         String?
+  status         String           @default("active")
+  settings       Json             @default("{}")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  owner          User             @relation("TenantOwner", fields: [ownerId], references: [id])
+  plan           Plan?            @relation(fields: [planId], references: [id])
+  members        TenantMember[]
+  profiles       Profile[]
+  domains        Domain[]
+  themes         Theme[]
+  templates      Template[]
+  mediaAssets    MediaAsset[]
+  activityLogs   ActivityLog[]
+  auditLogs      AuditLog[]
+  subscription   Subscription?
+  invoices       Invoice[]
+  crmLeads       CrmLead[]
+  plugins        TenantPlugin[]
+  notifications  Notification[]
+  aiSessions     AiSession[]
+  pageBlocks     PageBlock[]
+  analyticsDaily AnalyticsDaily[]
+
+  @@index([ownerId])
+  @@index([slug])
+}
+
+model TenantMember {
+  id        String       @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      Role         @default(MEMBER)
+  status    MemberStatus @default(ACTIVE)
+  invitedAt DateTime     @default(now())
+  joinedAt  DateTime?
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+}
+
+model Profile {
+  id              String           @id @default(cuid())
+  tenantId        String
+  ownerId         String
+  slug            String
+  displayName     String
+  handle          String?
+  headline        String?
+  bio             String?
+  avatarUrl       String?
+  bannerUrl       String?
+  email           String?
+  phone           String?
+  location        String?
+  locale          String           @default("vi")
+  status          ProfileStatus    @default(DRAFT)
+  themeId         String?
+  templateId      String?
+  isPrimary       Boolean          @default(false)
+  publishedAt     DateTime?
+  settings        Json             @default("{}")
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String?
+  ogImageUrl      String?
+  twitterHandle   String?
+  jsonLd          Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner           User             @relation("ProfileOwner", fields: [ownerId], references: [id])
+  theme           Theme?           @relation(fields: [themeId], references: [id])
+  template        Template?        @relation(fields: [templateId], references: [id])
+  domains         Domain[]
+  socialLinks     SocialLink[]
+  quickLinks      QuickLink[]
+  stats           ProfileStat[]
+  tags            ProfileTag[]
+  timelineItems   TimelineItem[]
+  pageBlocks      PageBlock[]
+  analyticsEvents AnalyticsEvent[]
+  analyticsDaily  AnalyticsDaily[]
+  mediaAssets     MediaAsset[]
+  translations    ProfileI18n[]
+  qrCodes         QrCode[]
+
+  @@unique([tenantId, slug])
+  @@unique([slug])
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([status])
+}
+
+model ProfileI18n {
+  id          String  @id @default(cuid())
+  profileId   String
+  locale      String
+  displayName String?
+  headline    String?
+  bio         String?
+  seoTitle    String?
+  seoDescription String?
+  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, locale])
+}
+
+model SocialLink {
+  id        String  @id @default(cuid())
+  profileId String
+  platform  String
+  label     String
+  handle    String?
+  url       String
+  icon      String?
+  sortOrder Int     @default(0)
+  isVisible Boolean @default(true)
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model QuickLink {
+  id          String  @id @default(cuid())
+  profileId   String
+  title       String
+  description String?
+  url         String
+  icon        String?
+  priceLabel  String?
+  priceValue  String?
+  accent      String?
+  sortOrder   Int     @default(0)
+  isVisible   Boolean @default(true)
+  isPriced    Boolean @default(false)
+  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model ProfileStat {
+  id        String  @id @default(cuid())
+  profileId String
+  label     String
+  value     String
+  sortOrder Int     @default(0)
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model ProfileTag {
+  id        String  @id @default(cuid())
+  profileId String
+  label     String
+  sortOrder Int     @default(0)
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model TimelineItem {
+  id          String  @id @default(cuid())
+  profileId   String
+  title       String
+  description String?
+  badge       String?
+  period      String?
+  icon        String?
+  accent      String?
+  sortOrder   Int     @default(0)
+  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model Domain {
+  id               String       @id @default(cuid())
+  tenantId         String
+  profileId        String?
+  hostname         String       @unique
+  type             DomainType   @default(CUSTOM)
+  status           DomainStatus @default(PENDING)
+  isPrimary        Boolean      @default(false)
+  verificationToken String?
+  verifiedAt       DateTime?
+  sslStatus        String       @default("pending")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profile          Profile?     @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([profileId])
+  @@index([hostname])
+}
+
+model Theme {
+  id          String    @id @default(cuid())
+  tenantId    String?
+  name        String
+  slug        String
+  description String?
+  isSystem    Boolean   @default(false)
+  isPublic    Boolean   @default(false)
+  tokens      Json      @default("{}")
+  previewUrl  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profiles    Profile[]
+
+  @@unique([tenantId, slug])
+  @@index([slug])
+}
+
+model Template {
+  id          String      @id @default(cuid())
+  tenantId    String?
+  name        String
+  slug        String
+  description String?
+  isSystem    Boolean     @default(false)
+  isPublic    Boolean     @default(false)
+  layout      Json        @default("{}")
+  previewUrl  String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  tenant      Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profiles    Profile[]
+  pageBlocks  PageBlock[]
+
+  @@unique([tenantId, slug])
+  @@index([slug])
+}
+
+model PageBlock {
+  id         String    @id @default(cuid())
+  tenantId   String
+  profileId  String?
+  templateId String?
+  type       BlockType
+  title      String?
+  content    Json      @default("{}")
+  sortOrder  Int       @default(0)
+  isVisible  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profile    Profile?  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  template   Template? @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([templateId])
+  @@index([tenantId])
+}
+
+model MediaAsset {
+  id          String    @id @default(cuid())
+  tenantId    String
+  profileId   String?
+  uploadedBy  String?
+  kind        MediaKind @default(IMAGE)
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  storageKey  String
+  publicUrl   String
+  width       Int?
+  height      Int?
+  alt         String?
+  createdAt   DateTime  @default(now())
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profile     Profile?  @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  uploader    User?     @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([profileId])
+  @@index([storageKey])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  profileId String
+  eventType String
+  path      String?
+  referrer  String?
+  userAgent String?
+  country   String?
+  city      String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+  @@index([eventType])
+}
+
+model AnalyticsDaily {
+  id        String   @id @default(cuid())
+  tenantId  String
+  profileId String
+  date      DateTime
+  views     Int      @default(0)
+  clicks    Int      @default(0)
+  uniques   Int      @default(0)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, date])
+  @@index([tenantId, date])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  actorId    String?
+  action     String
+  resource   String
+  resourceId String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([actorId])
+}
+
+model Plan {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  name          String
+  description   String?
+  priceCents    Int          @default(0)
+  currency      String       @default("VND")
+  interval      PlanInterval @default(MONTHLY)
+  features      Json         @default("{}")
+  maxProfiles   Int          @default(10)
+  maxMembers    Int          @default(5)
+  maxDomains    Int          @default(3)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  tenants       Tenant[]
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String             @id @default(cuid())
+  tenantId         String             @unique
+  planId           String
+  status           SubscriptionStatus @default(TRIALING)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean          @default(false)
+  stripeCustomerId   String?
+  stripeSubscriptionId String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan             Plan               @relation(fields: [planId], references: [id])
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  tenantId    String
+  amountCents Int
+  currency    String   @default("VND")
+  status      String   @default("draft")
+  issuedAt    DateTime @default(now())
+  paidAt      DateTime?
+  pdfUrl      String?
+  metadata    Json     @default("{}")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model CrmLead {
+  id        String        @id @default(cuid())
+  tenantId  String
+  ownerId   String?
+  name      String
+  email     String?
+  phone     String?
+  source    String?
+  status    CrmLeadStatus @default(NEW)
+  notes     String?
+  metadata  Json          @default("{}")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner     User?         @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  tenantId  String?
+  userId    String
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus  @default(PENDING)
+  title     String
+  body      String
+  payload   Json                @default("{}")
+  createdAt DateTime            @default(now())
+  readAt    DateTime?
+  tenant    Tenant?             @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([tenantId])
+}
+
+model Plugin {
+  id          String         @id @default(cuid())
+  code        String         @unique
+  name        String
+  description String?
+  version     String         @default("1.0.0")
+  isPublic    Boolean        @default(true)
+  manifest    Json           @default("{}")
+  createdAt   DateTime       @default(now())
+  installations TenantPlugin[]
+  marketplace MarketplaceItem?
+}
+
+model TenantPlugin {
+  id        String       @id @default(cuid())
+  tenantId  String
+  pluginId  String
+  status    PluginStatus @default(INSTALLED)
+  config    Json         @default("{}")
+  installedAt DateTime   @default(now())
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plugin    Plugin       @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, pluginId])
+}
+
+model MarketplaceItem {
+  id          String              @id @default(cuid())
+  type        MarketplaceItemType
+  slug        String              @unique
+  title       String
+  description String?
+  priceCents  Int                 @default(0)
+  currency    String              @default("VND")
+  previewUrl  String?
+  pluginId    String?             @unique
+  metadata    Json                @default("{}")
+  isPublished Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  plugin      Plugin?             @relation(fields: [pluginId], references: [id], onDelete: SetNull)
+}
+
+model AiSession {
+  id        String      @id @default(cuid())
+  tenantId  String
+  userId    String
+  title     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AiMessage[]
+
+  @@index([tenantId, userId])
+}
+
+model AiMessage {
+  id        String        @id @default(cuid())
+  sessionId String
+  role      AiMessageRole
+  content   String
+  metadata  Json          @default("{}")
+  createdAt DateTime      @default(now())
+  session   AiSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model QrCode {
+  id        String   @id @default(cuid())
+  profileId String
+  label     String   @default("Default")
+  targetUrl String
+  imageData String?
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
