@@ -22,5 +22,5 @@ Allow: /
 User-agent: ClaudeBot
 Allow: /
 
-Sitemap: https://profile.miyaru.online/sitemap.xml
-Host: https://profile.miyaru.online
+Sitemap: https://info.yue.vn/sitemap.xml
+Host: https://info.yue.vn
