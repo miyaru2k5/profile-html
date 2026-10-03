@@ -1,1 +1,1 @@
-﻿# info.yue.vn
+﻿# yue.vn
